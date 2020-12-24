@@ -40,7 +40,7 @@ static Node *build_tree(void);
 // 木を深さ優先で操作する関数
 static void traverse_tree(const int depth, Node *np, unsigned int codeword);
 
-static void print_uint_binary(unsigned int bit);
+static void print_uint_binary(unsigned int bit, const int depth);
 
 // 以下 static関数の実装
 static void count_symbols(const char *filename)
@@ -54,9 +54,7 @@ static void count_symbols(const char *filename)
   symbol_count = (int*)calloc(nsymbols, sizeof(int));
   
   // 1Byteずつ読み込み、カウントする
-  /*
-    write a code for counting
-  */
+ 
   unsigned char tmp;
   while (fread(&tmp, sizeof(unsigned char), 1, fp) == 1) {
     symbol_count[(int)tmp]++;
@@ -111,7 +109,6 @@ static Node *build_tree()
   }
 
   const int dummy = -1; // ダミー用のsymbol を用意しておく
-  // printf("n = %d\n", n);
   while (n >= 2) {
     Node *node1 = pop_min(&n, nodep);
     Node *node2 = pop_min(&n, nodep);
@@ -126,9 +123,8 @@ static Node *build_tree()
     else {
       nodep[n] = create_node(dummy, tmp_cnt, node2, node1); //　右に行くほどカウントが小さい
     }
-    printf("cnt1=%d, cnt2=%d\n", node1->count, node2->count);
+    // printf("cnt1=%d, cnt2=%d\n", node1->count, node2->count);
     n++;
-    // printf("n = %d\n", n);
   }
   // 木にした後は symbol_counts は free
   free(symbol_count);
@@ -147,7 +143,7 @@ static void traverse_tree(const int depth, Node *np, const unsigned int codeword
     
     printf("count:%d, ", np->count);
     printf("codeword:");
-    print_uint_binary(codeword); 
+    print_uint_binary(codeword, depth); 
     // printf("symbol = %c, cnt = %d\n", (unsigned char)np->symbol, np->count);
   }
 
@@ -172,26 +168,19 @@ int encode(const char *filename)
   return EXIT_SUCCESS;
 }
 
-static void print_uint_binary(unsigned int bit) {
+static void print_uint_binary(unsigned int bit, const int depth) {
   
   if (bit == 0) {
     printf("0\n");
     return;
   }
   
-  unsigned int devisor = 1 << 31;
-  int zero_padding = 1;
+  unsigned int devisor = 1 << (depth-1);
+  // int zero_padding = 1;
   while (devisor > 0)
   {
     int b = bit / devisor;
-    if (b == 1) {
-      printf("%d", b);
-      zero_padding = 0;
-    }
-    else {
-      if (!zero_padding) printf("%d", b);
-    }
-
+    printf("%d", b);
     bit %= devisor;
     devisor /= 2;
   }
