@@ -17,6 +17,7 @@ typedef struct node
   int count;
   struct node *left;
   struct node *right;
+  unsigned int codeword;
 } Node;
 
 // このソースで有効なstatic関数のプロトタイプ宣言
@@ -37,9 +38,9 @@ static Node *pop_min(int *n, Node *nodep[]);
 static Node *build_tree(void);
 
 // 木を深さ優先で操作する関数
-static void traverse_tree(const int depth, const Node *np);
+static void traverse_tree(const int depth, Node *np, unsigned int codeword);
 
-
+static void print_uint_binary(unsigned int bit);
 
 // 以下 static関数の実装
 static void count_symbols(const char *filename)
@@ -60,11 +61,6 @@ static void count_symbols(const char *filename)
   while (fread(&tmp, sizeof(unsigned char), 1, fp) == 1) {
     symbol_count[(int)tmp]++;
   }
-
-  // for (int i = 0; i < nsymbols; i++) {
-  //   printf("%c:%d ", (unsigned char)i, symbol_count[i]);
-  // }
-  // printf("\n");
 
   fclose(fp);
 }
@@ -124,8 +120,13 @@ static Node *build_tree()
     // 選ばれた2つのノードを元に統合ノードを新規作成
     // 作成したノードはnodep にどうすればよいか?
     int tmp_cnt = node1->count + node2->count;
-
-    nodep[n] = create_node(dummy, tmp_cnt, node1, node2);
+    if (node1->symbol != -1 && node2->symbol == -1) {
+      nodep[n] = create_node(dummy, tmp_cnt, node1, node2); //　
+    }
+    else {
+      nodep[n] = create_node(dummy, tmp_cnt, node2, node1); //　右に行くほどカウントが小さい
+    }
+    printf("cnt1=%d, cnt2=%d\n", node1->count, node2->count);
     n++;
     // printf("n = %d\n", n);
   }
@@ -136,13 +137,26 @@ static Node *build_tree()
 
 // Perform depth-first traversal of the tree
 // 深さ優先で木を走査する
-// 現状は何もしていない（再帰してたどっているだけ）
-static void traverse_tree(const int depth, const Node *np)
+static void traverse_tree(const int depth, Node *np, const unsigned int codeword)
 {			  
+	if (np->left == NULL && np->right == NULL) { //葉まで来た
+    char sym = (unsigned char)(np->symbol);
+    np->codeword = codeword;
+    if (np->symbol == 10) printf("symbol: \n" );
+    else printf("symbol: %c ", sym);
+    
+    printf("count:%d, ", np->count);
+    printf("codeword:");
+    print_uint_binary(codeword); 
+    // printf("symbol = %c, cnt = %d\n", (unsigned char)np->symbol, np->count);
+  }
+
   if (np->left == NULL) return;
-	printf("%d\n", np->count);
-  traverse_tree(depth + 1, np->left);
-  traverse_tree(depth + 1, np->right);
+  
+  unsigned int lcode = (codeword << 1); // 0を左につける
+  unsigned int rcode = (codeword << 1) | 1; // 1を左につける
+  traverse_tree(depth + 1, np->left, lcode); 
+  traverse_tree(depth + 1, np->right, rcode);
 }
 
 // この関数のみ外部 (main) で使用される (staticがついていない)
@@ -154,7 +168,32 @@ int encode(const char *filename)
     fprintf(stderr,"A tree has not been constructed.\n");
     return EXIT_FAILURE;
   }
-  
-  traverse_tree(0, root);
+  traverse_tree(0, root, 0);
   return EXIT_SUCCESS;
+}
+
+static void print_uint_binary(unsigned int bit) {
+  
+  if (bit == 0) {
+    printf("0\n");
+    return;
+  }
+  
+  unsigned int devisor = 1 << 31;
+  int zero_padding = 1;
+  while (devisor > 0)
+  {
+    int b = bit / devisor;
+    if (b == 1) {
+      printf("%d", b);
+      zero_padding = 0;
+    }
+    else {
+      if (!zero_padding) printf("%d", b);
+    }
+
+    bit %= devisor;
+    devisor /= 2;
+  }
+  printf("\n");
 }
