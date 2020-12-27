@@ -23,7 +23,6 @@ typedef struct node
 // このソースで有効なstatic関数のプロトタイプ宣言
 // 一方で、ヘッダファイルは外部からの参照を許す関数の宣言のみ
 
-
 // ファイルを読み込み、static配列の値を更新する関数
 static void count_symbols(const char *filename);
 
@@ -135,19 +134,21 @@ static Node *build_tree()
 // 深さ優先で木を走査する
 static void traverse_tree(const int depth, Node *np, const unsigned int codeword)
 {			  
-	if (np->left == NULL && np->right == NULL) { //葉まで来た
+	
+  if (np->left == NULL && np->right == NULL) { //葉まで来た
     char sym = (unsigned char)(np->symbol);
     np->codeword = codeword;
-    if (np->symbol == 10) printf("symbol: \n" );
-    else printf("symbol: %c ", sym);
+    if (sym == '\n') printf("symbol: \\n, " );
+    else printf("symbol: %c, ", sym);
     
     printf("count:%d, ", np->count);
     printf("codeword:");
     print_uint_binary(codeword, depth); 
-    // printf("symbol = %c, cnt = %d\n", (unsigned char)np->symbol, np->count);
+
+    return;
   }
 
-  if (np->left == NULL) return;
+  // if (np->left == NULL) return;
   
   unsigned int lcode = (codeword << 1); // 0を左につける
   unsigned int rcode = (codeword << 1) | 1; // 1を左につける
@@ -170,13 +171,12 @@ int encode(const char *filename)
 
 static void print_uint_binary(unsigned int bit, const int depth) {
   
-  if (bit == 0) {
-    printf("0\n");
-    return;
-  }
+  // if (bit == 0) {
+  //   printf("0\n");
+  //   return;
+  // }
   
   unsigned int devisor = 1 << (depth-1);
-  // int zero_padding = 1;
   while (devisor > 0)
   {
     int b = bit / devisor;
