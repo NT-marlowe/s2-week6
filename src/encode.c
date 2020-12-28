@@ -19,6 +19,7 @@ typedef struct node
   struct node *right;
   unsigned int codeword;
   int depth;
+  int last_right;
 } Node;
 
 // このソースで有効なstatic関数のプロトタイプ宣言
@@ -157,8 +158,13 @@ static void traverse_tree(const int depth, Node *np, const unsigned int codeword
   
   unsigned int lcode = (codeword << 1); // 0を左につける
   unsigned int rcode = (codeword << 1) | 1; // 1を左につける
+  
+  np->left->last_right = np->last_right;
   traverse_tree(depth + 1, np->left, lcode); 
-  traverse_tree(depth + 1, np->right, rcode);
+  if (np->right != NULL) {
+    np->right->last_right = depth;
+    traverse_tree(depth + 1, np->right, rcode);
+  }
 }
 
 // この関数のみ外部 (main) で使用される (staticがついていない)
@@ -171,46 +177,44 @@ int encode(const char *filename, FILE *fp)
     return EXIT_FAILURE;
   }
   traverse_tree(0, root, 0);
-
+  
+  fprintf(fp, "Huffman tree has been constructed\n");
   fprintf(fp, ".\n");
   fprintf(fp, "+");
   print_tree(root, fp);
+  printf("\n");
   return EXIT_SUCCESS;
 }
 
 static void print_tree(Node *np, FILE *fp) {
   
-  if (np->left == NULL) { // 葉なので再帰の末端
-    char c = (char)np->symbol;
-    if (c == '\n') printf("\\n:");
-    else printf("%c:", c);
+  if (np == NULL) return;
+
+  if (np->left == NULL) { // 再帰の末端の葉
+    // fprintf(fp, "|");
+    int lasr = np->last_right;
+    int d = np->depth;
+    char c = np->symbol;
+
+    for (int i = 0; i < 2 * lasr; i++) {
+      fprintf(fp, " ");
+    }
+    if (lasr > 0) fprintf(fp, "|-");
+    else fprintf(fp, "--");
+    for (int i = 0; i < 2*(d-lasr-1); i++) {
+      fprintf(fp, "-");
+    }
+    
+    if (c != '\n') fprintf(fp, "%c:", c);
+    else fprintf(fp, "\\n:");
     print_uint_binary(fp, np->codeword, np->depth);
-    fprintf(fp, "\n");
+    fprintf(fp, "\n|");
     
     return;
   }
 
-  if (np->depth >= 2) {
-    for (int i = 0; i < np->depth; i++) {
-      fprintf(fp, " ");    
-    }
-  }
-
-  fprintf(fp, "--");
   print_tree(np->left, fp);
-
-  if (np->right != NULL) {
-
-    fprintf(fp, "|");
-    for (int i = 0; i < np->right->depth; i++) {
-      fprintf(fp, " ");
-    }
-    if (np->right->depth >= 2) fprintf(fp, "|-");
-    else fprintf(fp, "--");
-
-    
-    print_tree(np->right, fp);
-  }
+  print_tree(np->right, fp);
 }
 
 static void print_uint_binary(FILE *fp, unsigned int bit, const int depth) {
