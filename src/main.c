@@ -9,7 +9,6 @@ int main(int argc, char **argv)
     exit(1);
   }
   // printf("file open\n");
-  encode(argv[1]);
-
+  encode(argv[1], stdout);
   return EXIT_SUCCESS;
 }
